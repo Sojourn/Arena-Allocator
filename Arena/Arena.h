@@ -6,10 +6,8 @@
 
 /*
 TODO:
-- Hide ArenaManager's constructor
 - Aligned memory allocations
 - Store the last allocation size at the top of an allocation
-- Refactor variable names to use hungarian notation
 - Add 'Get' to ArenaManager's getter functions
 - Add a current arena (arena stack) so the allocating arena can be asserted
 - Add comments
@@ -65,10 +63,10 @@ private:
 	ArenaManager();
 	~ArenaManager();
 
-	Arena_t arenas[ArenaTag_e::COUNT];
-	uint8_t *base;
-	size_t capacity;
-};
+	Arena_t   _arenas[ArenaTag_e::COUNT];
+	uint8_t * _base;
+	size_t    _capacity;
+}; 
 
 class ArenaAllocator : public NoCopyAssign
 {
@@ -85,9 +83,9 @@ private:
 	void Init(ArenaTag_e tag);
 	void Deinit();
 
-	Arena_t *arena;
-	uint8_t* oldTop;
-	size_t lastAllocSize;
+	Arena_t * _arena;
+	uint8_t * _oldTop;
+	size_t    _lastAllocSize;
 };
 
 #endif // HEAP_H

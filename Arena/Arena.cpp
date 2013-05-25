@@ -32,26 +32,26 @@ void ArenaManager::Init()
 {
 	ArenaManager &manager = ArenaManager::instance();
 	size_t offset = 0;
-	manager.capacity = 0;
+	manager._capacity = 0;
 
 	for(size_t i = 0; i < (size_t) ArenaTag_e::COUNT; i++)
 	{
-		manager.arenas[i].base = manager.arenas[i].top = nullptr;
-		manager.arenas[i].capacity = _initList[i].capacity;
-		manager.capacity += _initList[i].capacity;
+		manager._arenas[i].base = manager._arenas[i].top = nullptr;
+		manager._arenas[i].capacity = _initList[i].capacity;
+		manager._capacity += _initList[i].capacity;
 	}
-	manager.base = new uint8_t[manager.capacity];
+	manager._base = new uint8_t[manager._capacity];
 
 	for(size_t i = 0; i < (size_t) ArenaTag_e::COUNT; i++)
 	{
-		manager.arenas[i].base = manager.arenas[i].top = manager.base + offset;
+		manager._arenas[i].base = manager._arenas[i].top = manager._base + offset;
 	}
 }
 
 void ArenaManager::Deinit()
 {
 	const ArenaManager &manager = ArenaManager::instance();
-	delete [] manager.base;
+	delete [] manager._base;
 }
 
 const char *ArenaManager::GetName(ArenaTag_e tag)
@@ -62,19 +62,19 @@ const char *ArenaManager::GetName(ArenaTag_e tag)
 size_t ArenaManager::Capacity(ArenaTag_e tag)
 {
 	const ArenaManager &manager = ArenaManager::instance();
-	return manager.arenas[(size_t) tag].capacity;
+	return manager._arenas[(size_t) tag].capacity;
 }
 
 size_t ArenaManager::TotalCapacity()
 {
 	const ArenaManager &manager = ArenaManager::instance();
-	return manager.capacity;
+	return manager._capacity;
 }
 
 size_t ArenaManager::Used(ArenaTag_e tag)
 {
 	const ArenaManager &manager = ArenaManager::instance();
-	return manager.arenas[(size_t) tag].top - manager.arenas[(size_t) tag].base;
+	return manager._arenas[(size_t) tag].top - manager._arenas[(size_t) tag].base;
 }
 
 size_t ArenaManager::TotalUsed()
@@ -90,7 +90,7 @@ size_t ArenaManager::TotalUsed()
 
 size_t ArenaManager::Free(ArenaTag_e tag)
 {
-	return ArenaManager::instance().arenas[(size_t) tag].capacity - Used(tag);
+	return ArenaManager::instance()._arenas[(size_t) tag].capacity - Used(tag);
 }
 
 size_t ArenaManager::TotalFree()
@@ -115,14 +115,14 @@ void ArenaManager::DumpArena(ArenaTag_e tag)
 
 void ArenaAllocator::Init(ArenaTag_e tag)
 {
-	arena = &ArenaManager::instance().arenas[(size_t) tag];
-	oldTop = arena->top;
-	lastAllocSize = 0;
+	_arena = &ArenaManager::instance()._arenas[(size_t) tag];
+	_oldTop = _arena->top;
+	_lastAllocSize = 0;
 }
 
 void ArenaAllocator::Deinit()
 {
-	arena->top = oldTop;
+	_arena->top = _oldTop;
 }
 
 ArenaAllocator::ArenaAllocator(ArenaTag_e tag)
@@ -131,8 +131,8 @@ ArenaAllocator::ArenaAllocator(ArenaTag_e tag)
 }
 
 ArenaAllocator::ArenaAllocator() :
-	arena(nullptr),
-	oldTop(nullptr)
+	_arena(nullptr),
+	_oldTop(nullptr)
 {
 }
 
@@ -143,23 +143,21 @@ ArenaAllocator::~ArenaAllocator()
 
 void *ArenaAllocator::Allocate(size_t size)
 {
-	size_t nextUsed = (arena->top + size) - arena->base;
-	if(nextUsed > arena->capacity)
+	size_t nextUsed = (_arena->top + size) - _arena->base;
+	if(nextUsed > _arena->capacity)
 		return nullptr;
 
-	uint8_t *ptr = arena->top;
-	arena->top += size;
-	lastAllocSize = size;
+	uint8_t *ptr = _arena->top;
+	_arena->top += size;
+	_lastAllocSize = size;
 	return ptr;
 }
 
 void ArenaAllocator::Free(void *ptr)
 {
-	// TODO: Store the last allocation size at the top of an allocation
-
 	uint8_t *prevTop = (uint8_t*) ptr;
-	assert((prevTop + lastAllocSize) == arena->top);
+	assert((prevTop + _lastAllocSize) == _arena->top);
 
-	arena->top -= lastAllocSize;
-	lastAllocSize = 0;
+	_arena->top -= _lastAllocSize;
+	_lastAllocSize = 0;
 }
