@@ -8,7 +8,6 @@
 TODO:
 - Align the frame metadata
 - Add 'Get' to ArenaManager's getter functions
-- Add a current arena (arena stack) so the allocating arena can be asserted
 - Add comments
 - Add an option to specify the arena sizes dynamically
 - Add the option to resize an existing arena
@@ -22,8 +21,11 @@ enum class ArenaTag_e : uint32_t
 	COUNT
 };
 
+class ArenaAllocator;
+
 struct Arena_t
 {
+	const ArenaAllocator *topAllocator;
 	uint8_t* base;
 	uint8_t* top;
 	size_t   capacity;
@@ -73,7 +75,7 @@ class ArenaAllocator : public NoCopyAssign
 {
 	friend class ArenaManager;
 public:
-	ArenaAllocator(ArenaTag_e tag);
+	ArenaAllocator(ArenaTag_e tag, bool preserve = false);
 	~ArenaAllocator();
 
 	void *Allocate(const uint32_t size, const uint32_t alignment = 4);
@@ -83,9 +85,11 @@ public:
 	void DumpArena() const;
 
 private:
-	const ArenaTag_e _tag;
-	Arena_t *  _arena;
-	uint8_t *  _oldTop;
+	const ArenaTag_e      _tag;
+	const bool            _preserve;
+	const ArenaAllocator *_parentAllocator;
+	Arena_t *             _arena;
+	uint8_t *             _oldTop;
 };
 
 #endif // HEAP_H

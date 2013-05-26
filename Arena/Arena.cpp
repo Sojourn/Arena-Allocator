@@ -36,6 +36,7 @@ void ArenaManager::Init()
 
 	for(size_t i = 0; i < (size_t) ArenaTag_e::COUNT; i++)
 	{
+		manager._arenas[i].topAllocator = nullptr;
 		manager._arenas[i].base = manager._arenas[i].top = nullptr;
 		manager._arenas[i].capacity = _initList[i].capacity;
 		manager._capacity += _initList[i].capacity;
@@ -104,16 +105,25 @@ size_t ArenaManager::TotalFree()
 	return totalFree;
 }
 
-ArenaAllocator::ArenaAllocator(ArenaTag_e tag) :
-	_tag(tag)
+ArenaAllocator::ArenaAllocator(ArenaTag_e tag, bool preserve) :
+	_tag(tag),
+	_preserve(preserve)
 {
 	_arena = &ArenaManager::instance()._arenas[(size_t) tag];
+	_parentAllocator = _arena->topAllocator;
+	_arena->topAllocator = this;
 	_oldTop = _arena->top;
 }
 
 ArenaAllocator::~ArenaAllocator()
 {
-	_arena->top = _oldTop;
+	if(!_preserve)
+	{
+		assert(_arena->topAllocator == this);
+		_arena->top = _oldTop;
+	}
+
+	_arena->topAllocator = _parentAllocator;
 }
 
 uint32_t CalculatePadding(const uint8_t *ptr, const uint32_t alignment)
@@ -132,6 +142,8 @@ void *ArenaAllocator::Allocate(const uint32_t size, uint32_t const alignment)
 	uint32_t padding;
 	uint32_t allocationSize;
 	uint32_t requiredCapacity;
+
+	assert(_arena->topAllocator == this);
 
 	// Align the starting address
 	base = _arena->top;
@@ -169,6 +181,8 @@ void ArenaAllocator::Free(void *)
 	uint32_t allocationSize;
 	uint8_t *prevTop;
 	
+	assert(_arena->topAllocator == this);
+
 	allocationSize = *((uint32_t*) (_arena->top - 4));
 	prevTop = _arena->top - allocationSize;
 

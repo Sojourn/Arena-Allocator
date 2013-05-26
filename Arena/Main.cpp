@@ -4,6 +4,7 @@
 #include "Arena.h"
 
 void binaryDepthTest(size_t depth, uint8_t *data);
+void preserveTest();
 
 int main(int argc, char **argv)
 {
@@ -14,21 +15,24 @@ int main(int argc, char **argv)
 		//	binaryDepthTest(15, &data);
 		//	std::cout << (size_t) data << std::endl;
 		//}
+		//{
+		//	ArenaAllocator arena(ArenaTag_e::DumpTest_Arena);
+		//	void* ptr1 = arena.Allocate(1, 1);
+		//	void* ptr2 = arena.Allocate(2, 2);
+		//	void* ptr3 = arena.Allocate(3, 4);
+		//	void* ptr4 = arena.Allocate(4, 8);
+		//	void* ptr5 = arena.Allocate(5, 16);
+
+		//	arena.Free();
+		//	arena.Free();
+		//	arena.Free();
+		//	arena.Free();
+		//	arena.Free(ptr1);
+
+		//	arena.DumpArena();
+		//}
 		{
-			ArenaAllocator arena(ArenaTag_e::DumpTest_Arena);
-			void* ptr1 = arena.Allocate(1, 1);
-			void* ptr2 = arena.Allocate(2, 2);
-			void* ptr3 = arena.Allocate(3, 4);
-			void* ptr4 = arena.Allocate(4, 8);
-			void* ptr5 = arena.Allocate(5, 16);
-
-			arena.Free();
-			arena.Free();
-			arena.Free();
-			arena.Free();
-			arena.Free(ptr1);
-
-			arena.DumpArena();
+			preserveTest();
 		}
 
 	}
@@ -60,4 +64,20 @@ void binaryDepthTest(size_t depth, uint8_t *data)
 
 	*data += *childData[0];
 	*data += *childData[1];
+}
+
+void preserveTest()
+{
+	{
+		ArenaAllocator baseAllocator(ArenaTag_e::PreserveTest_Arena, false);
+		{
+			ArenaAllocator childAllocator(ArenaTag_e::PreserveTest_Arena, true);
+			childAllocator.Allocate(32);
+			childAllocator.Allocate(24);
+			childAllocator.Allocate(16);
+			assert(ArenaManager::Used(ArenaTag_e::PreserveTest_Arena) > 0);
+		}
+		assert(ArenaManager::Used(ArenaTag_e::PreserveTest_Arena) > 0);
+	}
+	assert(ArenaManager::Used(ArenaTag_e::PreserveTest_Arena) == 0);
 }
