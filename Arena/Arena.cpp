@@ -105,9 +105,9 @@ size_t ArenaManager::TotalFree()
 	return totalFree;
 }
 
-ArenaAllocator::ArenaAllocator(ArenaTag_e tag, bool preserve) :
+ArenaAllocator::ArenaAllocator(ArenaTag_e tag, bool persist) :
 	_tag(tag),
-	_preserve(preserve)
+	_persist(persist)
 {
 	_arena = &ArenaManager::instance()._arenas[(size_t) tag];
 	_parentAllocator = _arena->topAllocator;
@@ -117,7 +117,7 @@ ArenaAllocator::ArenaAllocator(ArenaTag_e tag, bool preserve) :
 
 ArenaAllocator::~ArenaAllocator()
 {
-	if(!_preserve)
+	if(!_persist)
 	{
 		assert(_arena->topAllocator == this);
 		_arena->top = _oldTop;

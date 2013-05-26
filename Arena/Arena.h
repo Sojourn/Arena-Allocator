@@ -75,7 +75,7 @@ class ArenaAllocator : public NoCopyAssign
 {
 	friend class ArenaManager;
 public:
-	ArenaAllocator(ArenaTag_e tag, bool preserve = false);
+	ArenaAllocator(ArenaTag_e tag, bool persist = false);
 	~ArenaAllocator();
 
 	void *Allocate(const uint32_t size, const uint32_t alignment = 4);
@@ -86,7 +86,7 @@ public:
 
 private:
 	const ArenaTag_e      _tag;
-	const bool            _preserve;
+	const bool            _persist;
 	const ArenaAllocator *_parentAllocator;
 	Arena_t *             _arena;
 	uint8_t *             _oldTop;
