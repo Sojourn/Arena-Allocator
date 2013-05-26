@@ -104,60 +104,103 @@ size_t ArenaManager::TotalFree()
 	return totalFree;
 }
 
-void ArenaManager::DumpArena(ArenaTag_e tag)
-{
-	std::cout << "[" << GetName(tag) << " Arena]" << std::endl;
-	std::cout << "Capacity: " << Capacity(tag) << std::endl;
-	std::cout << "Free: " << Free(tag) << std::endl;
-	std::cout << "Used: " << Used(tag) << std::endl;
-	std::cout << std::endl;
-}
-
-void ArenaAllocator::Init(ArenaTag_e tag)
+ArenaAllocator::ArenaAllocator(ArenaTag_e tag) :
+	_tag(tag)
 {
 	_arena = &ArenaManager::instance()._arenas[(size_t) tag];
 	_oldTop = _arena->top;
-	_lastAllocSize = 0;
-}
-
-void ArenaAllocator::Deinit()
-{
-	_arena->top = _oldTop;
-}
-
-ArenaAllocator::ArenaAllocator(ArenaTag_e tag)
-{
-	Init(tag);
-}
-
-ArenaAllocator::ArenaAllocator() :
-	_arena(nullptr),
-	_oldTop(nullptr)
-{
 }
 
 ArenaAllocator::~ArenaAllocator()
 {
-	Deinit();
+	_arena->top = _oldTop;
 }
 
-void *ArenaAllocator::Allocate(size_t size)
+uint32_t CalculatePadding(const uint8_t *ptr, const uint32_t alignment)
 {
-	size_t nextUsed = (_arena->top + size) - _arena->base;
-	if(nextUsed > _arena->capacity)
+	uint32_t mask = alignment - 1;
+	uint32_t misalignment = ((uint32_t) ptr) & mask;
+	return (misalignment > 0) ? (alignment - misalignment) : 0;
+}
+
+void *ArenaAllocator::Allocate(const uint32_t size, uint32_t const alignment)
+{
+	uint8_t *base;
+	uint8_t *alignedBase;
+	uint8_t *sizePtr8;
+	uint32_t *sizePtr32;
+	uint32_t padding;
+	uint32_t allocationSize;
+	uint32_t requiredCapacity;
+
+	// Align the starting address
+	base = _arena->top;
+	padding = CalculatePadding(base, alignment);
+	alignedBase = base + padding;
+
+	// Allocate if the allocation can be satisfied
+	allocationSize = padding + size + sizeof(uint32_t);
+	requiredCapacity = (_arena->top - _arena->base) + allocationSize;
+	if(requiredCapacity > _arena->capacity)
+	{
 		return nullptr;
+	}
+	else
+	{
+		_arena->top += allocationSize;
+	}
 
-	uint8_t *ptr = _arena->top;
-	_arena->top += size;
-	_lastAllocSize = size;
-	return ptr;
+	// Record the size of the allocation in the frame
+	sizePtr8 = alignedBase + size;
+	sizePtr32 = (uint32_t*) sizePtr8;
+	*sizePtr32 = allocationSize;
+
+	assert(padding < alignment);
+	assert((alignedBase - base) == padding);
+	assert((base + allocationSize) == _arena->top);
+	assert((alignedBase + size) == (_arena->top - 4));
+	assert((sizePtr8 + 4) == _arena->top);
+
+	return alignedBase;
 }
 
-void ArenaAllocator::Free(void *ptr)
+void ArenaAllocator::Free(void *)
 {
-	uint8_t *prevTop = (uint8_t*) ptr;
-	assert((prevTop + _lastAllocSize) == _arena->top);
+	uint32_t allocationSize;
+	uint8_t *prevTop;
+	
+	allocationSize = *((uint32_t*) (_arena->top - 4));
+	prevTop = _arena->top - allocationSize;
 
-	_arena->top -= _lastAllocSize;
-	_lastAllocSize = 0;
+	assert(_arena->base <= prevTop);
+
+	_arena->top = prevTop;
+}
+
+void ArenaAllocator::DumpArena() const
+{
+	const ArenaManager &manager = ArenaManager::instance();
+	size_t allocationSize;
+	uint8_t *frameTop;
+	uint8_t *frameBottom;
+	uint32_t *sizePtr;
+
+	std::cout << "[" << manager.GetName(_tag) << " Arena]" << std::endl;
+	std::cout << "Capacity: " << manager.Capacity(_tag) << std::endl;
+	std::cout << "Free: " << manager.Free(_tag) << std::endl;
+	std::cout << "Used: " << manager.Used(_tag) << std::endl;
+	std::cout << "Frames: " << std::endl;
+
+	frameTop = _arena->top;
+	while(frameTop > _arena->base)
+	{
+		sizePtr = (uint32_t*) (frameTop - 4);
+		allocationSize = *sizePtr;
+		frameBottom = frameTop - allocationSize;
+
+		std::cout << "    " << allocationSize << std::endl;
+		frameTop = frameBottom;
+	}
+
+	std::cout << std::endl;
 }

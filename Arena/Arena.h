@@ -6,11 +6,12 @@
 
 /*
 TODO:
-- Aligned memory allocations
-- Store the last allocation size at the top of an allocation
+- Align the frame metadata
 - Add 'Get' to ArenaManager's getter functions
 - Add a current arena (arena stack) so the allocating arena can be asserted
 - Add comments
+- Add an option to specify the arena sizes dynamically
+- Add the option to resize an existing arena
 */
 
 enum class ArenaTag_e : uint32_t
@@ -75,17 +76,16 @@ public:
 	ArenaAllocator(ArenaTag_e tag);
 	~ArenaAllocator();
 
-	void *Allocate(size_t size);
-	void Free(void *ptr);
+	void *Allocate(const uint32_t size, const uint32_t alignment = 4);
+	
+	// We don't actually need the pointer; just here for symmetry.
+	void Free(void *ptr = nullptr);
+	void DumpArena() const;
 
 private:
-	ArenaAllocator();
-	void Init(ArenaTag_e tag);
-	void Deinit();
-
-	Arena_t * _arena;
-	uint8_t * _oldTop;
-	size_t    _lastAllocSize;
+	const ArenaTag_e _tag;
+	Arena_t *  _arena;
+	uint8_t *  _oldTop;
 };
 
 #endif // HEAP_H

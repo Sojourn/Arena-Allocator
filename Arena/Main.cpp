@@ -9,11 +9,28 @@ int main(int argc, char **argv)
 {
 	ArenaManager::Init();
 	{
+		//{
+		//	uint8_t data = 0;
+		//	binaryDepthTest(15, &data);
+		//	std::cout << (size_t) data << std::endl;
+		//}
 		{
-			uint8_t data = 0;
-			binaryDepthTest(15, &data);
-			std::cout << (size_t) data << std::endl;
+			ArenaAllocator arena(ArenaTag_e::DumpTest_Arena);
+			void* ptr1 = arena.Allocate(1, 1);
+			void* ptr2 = arena.Allocate(2, 2);
+			void* ptr3 = arena.Allocate(3, 4);
+			void* ptr4 = arena.Allocate(4, 8);
+			void* ptr5 = arena.Allocate(5, 16);
+
+			arena.Free();
+			arena.Free();
+			arena.Free();
+			arena.Free();
+			arena.Free(ptr1);
+
+			arena.DumpArena();
 		}
+
 	}
 	ArenaManager::Deinit();
 
@@ -30,8 +47,8 @@ void binaryDepthTest(size_t depth, uint8_t *data)
 	if(depth == 0)
 		return;
 
-	childData[0] = (uint8_t*) alloc.Allocate(1);
-	childData[1] = (uint8_t*) alloc.Allocate(1);
+	childData[0] = (uint8_t*) alloc.Allocate(1, 1);
+	childData[1] = (uint8_t*) alloc.Allocate(1, 1);
 	if(childData[0] == nullptr || childData[1] == nullptr)
 		return;
 	
