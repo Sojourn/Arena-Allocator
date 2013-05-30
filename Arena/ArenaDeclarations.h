@@ -1,6 +1,6 @@
 // Name, Capacity
 
-ARENA(RecursiveTest, 13)
+ARENA(RecursiveTest, 32)
 ARENA(DumpTest, 2048)
 ARENA(PersistTest, 1024)
 ARENA(StaticTest, 1024)

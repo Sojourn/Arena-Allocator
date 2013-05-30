@@ -60,46 +60,46 @@ const char *ArenaManager::GetName(ArenaTag_e tag)
 	return _initList[(size_t) tag].name;
 }
 
-size_t ArenaManager::Capacity(ArenaTag_e tag)
+size_t ArenaManager::GetCapacity(ArenaTag_e tag)
 {
 	const ArenaManager &manager = ArenaManager::instance();
 	return manager._arenas[(size_t) tag].capacity;
 }
 
-size_t ArenaManager::TotalCapacity()
+size_t ArenaManager::GetTotalCapacity()
 {
 	const ArenaManager &manager = ArenaManager::instance();
 	return manager._capacity;
 }
 
-size_t ArenaManager::Used(ArenaTag_e tag)
+size_t ArenaManager::GetUsed(ArenaTag_e tag)
 {
 	const ArenaManager &manager = ArenaManager::instance();
 	return manager._arenas[(size_t) tag].top - manager._arenas[(size_t) tag].base;
 }
 
-size_t ArenaManager::TotalUsed()
+size_t ArenaManager::GetTotalUsed()
 {
 	size_t totalUsed = 0;
 	for(size_t i = 0; i < (size_t) ArenaTag_e::COUNT; i++)
 	{
-		totalUsed += Used((ArenaTag_e) i);
+		totalUsed += GetUsed((ArenaTag_e) i);
 	}
 
 	return totalUsed;
 }
 
-size_t ArenaManager::Free(ArenaTag_e tag)
+size_t ArenaManager::GetFree(ArenaTag_e tag)
 {
-	return ArenaManager::instance()._arenas[(size_t) tag].capacity - Used(tag);
+	return ArenaManager::instance()._arenas[(size_t) tag].capacity - GetUsed(tag);
 }
 
-size_t ArenaManager::TotalFree()
+size_t ArenaManager::GetTotalFree()
 {
 	size_t totalFree = 0;
 	for(size_t i = 0; i < (size_t) ArenaTag_e::COUNT; i++)
 	{
-		totalFree += Free((ArenaTag_e) i);
+		totalFree += GetFree((ArenaTag_e) i);
 	}
 
 	return totalFree;
@@ -167,6 +167,7 @@ void *ArenaAllocator::Allocate(const uint32_t size, uint32_t const alignment)
 	sizePtr32 = (uint32_t*) sizePtr8;
 	*sizePtr32 = allocationSize;
 
+	// Verify the allocation frame
 	assert(padding < alignment);
 	assert((alignedBase - base) == padding);
 	assert((base + allocationSize) == _arena->top);
@@ -186,9 +187,30 @@ void ArenaAllocator::Free(void *)
 	allocationSize = *((uint32_t*) (_arena->top - 4));
 	prevTop = _arena->top - allocationSize;
 
+	assert(_oldTop <= prevTop);
 	assert(_arena->base <= prevTop);
 
 	_arena->top = prevTop;
+}
+
+const char *ArenaAllocator::GetName() const
+{
+	return ArenaManager::GetName(_tag);
+}
+
+size_t ArenaAllocator::GetCapacity() const
+{
+	return _arena->capacity;
+}
+
+size_t ArenaAllocator::GetUsed() const
+{
+	return _arena->top - _arena->base;
+}
+
+size_t ArenaAllocator::GetFree() const
+{
+	return _arena->capacity - GetUsed();
 }
 
 void ArenaAllocator::DumpArena() const
@@ -200,9 +222,9 @@ void ArenaAllocator::DumpArena() const
 	uint32_t *sizePtr;
 
 	std::cout << "[" << manager.GetName(_tag) << " Arena]" << std::endl;
-	std::cout << "Capacity: " << manager.Capacity(_tag) << std::endl;
-	std::cout << "Free: " << manager.Free(_tag) << std::endl;
-	std::cout << "Used: " << manager.Used(_tag) << std::endl;
+	std::cout << "Capacity: " << manager.GetCapacity(_tag) << std::endl;
+	std::cout << "Free: " << manager.GetFree(_tag) << std::endl;
+	std::cout << "Used: " << manager.GetUsed(_tag) << std::endl;
 	std::cout << "Frames: " << std::endl;
 
 	frameTop = _arena->top;

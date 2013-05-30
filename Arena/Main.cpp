@@ -73,17 +73,17 @@ void binaryDepthTest(size_t depth, uint8_t *data)
 void persistTest()
 {
 	{
-		ArenaAllocator baseAllocator(ArenaTag_e::PersistTest_Arena, false);
+		ArenaAllocator baseAllocator(ArenaTag_e::PersistTest_Arena);
 		{
 			ArenaAllocator childAllocator(ArenaTag_e::PersistTest_Arena, true);
 			childAllocator.Allocate(32);
 			childAllocator.Allocate(24);
 			childAllocator.Allocate(16);
-			assert(ArenaManager::Used(ArenaTag_e::PersistTest_Arena) > 0);
+			assert(ArenaManager::GetUsed(ArenaTag_e::PersistTest_Arena) > 0);
 		}
-		assert(ArenaManager::Used(ArenaTag_e::PersistTest_Arena) > 0);
+		assert(ArenaManager::GetUsed(ArenaTag_e::PersistTest_Arena) > 0);
 	}
-	assert(ArenaManager::Used(ArenaTag_e::PersistTest_Arena) == 0);
+	assert(ArenaManager::GetUsed(ArenaTag_e::PersistTest_Arena) == 0);
 }
 
 void staticPersistTest()
@@ -92,5 +92,5 @@ void staticPersistTest()
 		ArenaAllocator staticAllocator(ArenaTag_e::StaticTest_Arena, true);
 		staticAllocator.Allocate(512);
 	}
-	assert(ArenaManager::Used(ArenaTag_e::StaticTest_Arena) > 0);
+	assert(ArenaManager::GetUsed(ArenaTag_e::StaticTest_Arena) > 0);
 }

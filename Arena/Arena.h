@@ -7,11 +7,16 @@
 /*
 TODO:
 - Align the frame metadata
-- Add 'Get' to ArenaManager's getter functions
 - Add comments
 - Add an option to specify the arena sizes dynamically
-- Add the option to resize an existing arena
+- Add the option to resize an existing arena (through a page freelist)
+- Test on other platforms
+- Add alignment to the arena frame size
 */
+
+class NoCopyAssign;
+class ArenaManager;
+class ArenaAllocator;
 
 enum class ArenaTag_e : uint32_t
 {
@@ -20,8 +25,6 @@ enum class ArenaTag_e : uint32_t
 #undef ARENA
 	COUNT
 };
-
-class ArenaAllocator;
 
 struct Arena_t
 {
@@ -50,14 +53,14 @@ public:
 
 	static const char *GetName(ArenaTag_e tag);
 
-	static size_t Capacity(ArenaTag_e tag);
-	static size_t TotalCapacity();
+	static size_t GetCapacity(ArenaTag_e tag);
+	static size_t GetTotalCapacity();
 
-	static size_t Used(ArenaTag_e tag);
-	static size_t TotalUsed();
+	static size_t GetUsed(ArenaTag_e tag);
+	static size_t GetTotalUsed();
 
-	static size_t Free(ArenaTag_e tag);
-	static size_t TotalFree();
+	static size_t GetFree(ArenaTag_e tag);
+	static size_t GetTotalFree();
 
 	static void DumpArena(ArenaTag_e tag);
 
@@ -82,14 +85,19 @@ public:
 	
 	// We don't actually need the pointer; just here for symmetry.
 	void Free(void *ptr = nullptr);
+	
+	const char *GetName() const;
+	size_t GetCapacity() const;
+	size_t GetUsed() const;
+	size_t GetFree() const;
 	void DumpArena() const;
 
 private:
 	const ArenaTag_e      _tag;
 	const bool            _persist;
 	const ArenaAllocator *_parentAllocator;
-	Arena_t *             _arena;
-	uint8_t *             _oldTop;
+	Arena_t              *_arena;
+	uint8_t              *_oldTop;
 };
 
 #endif // HEAP_H
